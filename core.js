@@ -57,7 +57,7 @@
       return { songs: json.songs, workspaces: json.workspaces || [], flags: json.flags || {}, activity: json.activity || [], playlists: json.playlists || [], playlistMembers: json.playlistMembers || {} };
     }
     const songs = json.clips || json.songs || json.catalog || json.items || json.data;
-    if (Array.isArray(songs)) return { songs, workspaces: json.workspaces || [], flags: {}, activity: [] };
+    if (Array.isArray(songs)) return { songs, workspaces: json.workspaces || [], flags: {}, activity: [], playlists: json.playlists || [], playlistMembers: json.playlistMembers || {} };
     throw new Error('Şarkı listesi bulunamadı. catalog.json ya da CSV yükle.');
   }
   function uniqueSongs(songs) {
@@ -90,7 +90,7 @@
       ...(Array.isArray(meta.history) ? meta.history.flatMap(x => [x?.id, x?.clip_id]) : []),
       ...(Array.isArray(song.clip_roots?.clips) ? song.clip_roots.clips.map(c => c.id || c.clip_id) : []),
     ]).filter(x => x !== id);
-    const isRemix = truthy(song.is_remix) || /remix/i.test(task);
+    const isRemix = truthy(song.is_remix) || truthy(meta.is_remix) || /remix/i.test(task);
     const isCover = /cover/i.test(task) || !!meta.cover_clip_id || !!song.cover_clip_id;
     const liked = truthy(song.is_liked) || truthy(song.liked);
     const disliked = truthy(song.is_disliked) || truthy(song.disliked);
