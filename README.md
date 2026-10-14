@@ -72,3 +72,6 @@ node --test tests/core.test.cjs
 
 ---
 {saygiylasunar} · EFSS
+## Son geliştirme dalı
+
+İndirilmemiş eserleri sırasıyla resmî Suno sayfasında açma düğmesi eklendi. Şarkı kartında Suno bağlantısı gösterilir. Suno katalog JSON içe aktarması playlist ilişkilerini ve remix etiketlerini korur. Otomatik ses indirme henüz yoktur. Suno hesabına bağlanan araç burada etkin değildir.
