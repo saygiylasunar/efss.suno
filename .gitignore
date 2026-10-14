@@ -12,3 +12,7 @@ catalog.csv
 workspaces.json
 sunoEFSS-backup-*.json
 sunoEFSS-flags-*.csv
+# Private local song metadata and login material
+/data/
+.env
+*.cookie
