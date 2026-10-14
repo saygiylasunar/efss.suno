@@ -170,6 +170,7 @@
     const eventHistory=state.activity.filter(e=>e.id===id).slice(-20).reverse();
     $('detailBody').innerHTML=`<div class="detail-art">${cover(song,'detail-cover')}<div><div class="detail-title">${h(song.title)}</div><div class="detail-id">${h(song.id)}</div></div></div>
       <div class="detail-actions"><button type="button" data-detail-status="downloaded" class="${st==='downloaded'?'active downloaded':''}">✓ İndirdim</button><button type="button" data-detail-status="missing" class="${st==='missing'?'active missing':''}">✕ İndirmedim</button><button type="button" data-detail-status="unknown" class="${st==='unknown'?'active':''}">? Belirsiz</button></div>
+      <div class="detail-section"><a href="${h(song.link)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">↗ Suno’da Aç / Resmî Download</a></div>
       <div class="detail-section"><h3>Metadata / Özellikler</h3><div class="meta-grid">${metaTile('Oluşturulma',fullDate(song.date))}${metaTile('Model',song.model)}${metaTile('Dinlenme',song.plays===null?'—':fmtNumber.format(song.plays))}${metaTile('Süre',song.duration===null?'—':`${Math.floor(song.duration/60)}:${String(Math.floor(song.duration%60)).padStart(2,'0')}`)}${metaTile('Koleksiyonlar',song.workspaces.join(', '))}${metaTile('Playlistler',assignedPlaylists.map(p=>p.name).join(', '))}${metaTile('İşlem / Type',song.task||'Original')}${metaTile('Beğeni',song.liked?'Liked':song.disliked?'Disliked':'—')}${metaTile('Özellikler',[song.stem?'Stem':'',song.isRemix?'Remix':'',song.isCover?'Cover':'',song.instrumental?'Instrumental':''].filter(Boolean).join(', '))}${metaTile('Son işaretleme',flag.updatedAt?fullDate(flag.updatedAt):'—')}${metaTile('Durum kaynağı',flag.source||'—')}</div></div>
       <div class="detail-section"><h3>Style of Music</h3><div class="text-panel">${val(song.style)}</div></div>
       ${song.negativeStyle?`<div class="detail-section"><h3>Excluded Styles</h3><div class="text-panel">${h(song.negativeStyle)}</div></div>`:''}
@@ -187,6 +188,7 @@
   function openDetail(id) {selectedId=id;renderDetail(id);$('detail').hidden=false;$('overlay').hidden=false;$('closeDetail').focus();}
   function closeDetail() {selectedId=null;$('detail').hidden=true;$('overlay').hidden=true;}
   function resetFilters() { $('search').value='';$('statusFilter').value='all';$('kindFilter').value='all';$('modelFilter').value='all';$('workspaceFilter').value='all';$('playlistFilter').value='all';$('dateFrom').value='';$('dateTo').value='';$('sort').value='newest';page=1;render(); }
+  window.SunoEFSSImport = importCatalog;
   async function importCatalog(file) {
     if(!file)return;
     try {
@@ -299,6 +301,13 @@
     for(const id of ['search','statusFilter','kindFilter','modelFilter','workspaceFilter','playlistFilter','sort','dateFrom','dateTo']){
       $(id).addEventListener(id==='search'?'input':'change',()=>{page=1;render();});
     }
+    $('openNextDownload').addEventListener('click',()=>{
+      const next=filtered.find(x=>songStatus(x.id)!=='downloaded');
+      if(!next){toast('Filtrede indirilecek başka eser bulunamadı.');return;}
+      openDetail(next.id);
+      window.open(next.link, '_blank', 'noopener,noreferrer');
+      toast('Suno resmi Download menüsünden indir ve sonra bu eseri işaretle: '+next.title);
+    });
     $('clearFilters').addEventListener('click',resetFilters);
     $('resetNav').addEventListener('click',resetFilters);
     $('showMissing').addEventListener('click',()=>{$('statusFilter').value='missing';$('workspaceFilter').value='all';page=1;render();});
