@@ -34,3 +34,13 @@
 2. Per-format MP3/WAV/stem archive state and batch flag management.
 3. Verified local-file mapping with user confirmation, hash and size.
 4. Timeline, history filters and song/playlist relationship graph.
+
+
+## 2026-10-14 — Catalog import hardening and official download queue
+- Parent: feat/bootstrap-archiver-v0.2 @ 7504bac8b758d60bc3e16dac1476e7d9bda5f3a4
+- Working branch: feat/catalog-collector
+- GitHub changes: next-pending song opens official Suno Download page, detail link, import preserves playlists/remix, private data ignored, new regression test.
+- Local-only prototype: read-only Python collector / connected UI prepared and mocked; not yet committed to this GitHub branch, and no live Suno test.
+- Required: backend integration, exact-head CI SUCCESS, Vivaldi live account smoke test, metadata reconciliation, archive backup test.
+- No automated WAV/MP3 exports; Suno official download allowances remain applicable.
+- PR stays DRAFT/OPEN/UNMERGED until accepted.
