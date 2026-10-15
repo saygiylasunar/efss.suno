@@ -17,7 +17,7 @@ import secrets
 import threading
 import time
 import uuid
-from downloads import DownloadError, export_one, read_manifest, save_manifest, validate_queue
+from downloads import DownloadError, export_one, read_manifest, save_manifest, validate_queue, media_inventory, preflight_sources, source_host
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -303,6 +303,7 @@ class Manager:
         self.lock = threading.Lock()
         self.catalog = None
         self.download_busy = False
+        self.download_cancel = threading.Event()
         self.download_progress = {'stage':'Hazır','done':0,'total':0,'failed':0,'current':'','errors':[]}
         self.download_manifest = read_manifest(DATA_DIR / 'download_manifest.json')
         path = DATA_DIR / 'catalog.json'
@@ -377,6 +378,19 @@ class Manager:
         # Read last atomically saved snapshot; never serialize mutable worker state.
         return read_manifest(DATA_DIR / 'download_manifest.json')
 
+    def media_inventory(self):
+        with self.lock:
+            songs = list((self.catalog or {}).get('songs') or [])
+        return media_inventory(songs)
+
+    def cancel_download(self):
+        with self.lock:
+            if not self.download_busy:
+                return {'requested': False, 'message': 'Aktif bir indirme yok.'}
+            self.download_cancel.set()
+            self.download_progress['stage'] = 'Durduruluyor...'
+            return {'requested': True, 'message': 'Kuyruk durduruluyor; acik ag istegi kesilmeyi bekleyebilir.'}
+
     def start_download(self, ids, fmt):
         with self.lock:
             if self.download_busy:
@@ -387,26 +401,47 @@ class Manager:
                 raise ValueError('Önce kendi Suno oturumunu bağla.')
             catalog = {c['id']:c for c in (self.catalog or {}).get('songs',[]) if isinstance(c,dict) and c.get('id')}
             targets = validate_queue(ids,fmt,catalog)
+            eligible, unsupported = preflight_sources(targets, fmt, catalog)
+            if not eligible:
+                hosts = sorted(set(source_host(catalog[x].get('audio_url')) for x in unsupported))
+                raise ValueError(f'{len(targets)} eser için tanınan bir ses kaynağı bulunamadı. Alan adları: {", ".join(hosts[:5])}. Kuyruk başlatılmadı; Medya alanlarını denetle.')
             session = self.session
+            self.download_cancel.clear()
             self.download_busy = True
-            self.download_progress = {'stage':'İndiriliyor','done':0,'total':len(targets),'failed':0,
-                                      'current':'','errors':[],'format':fmt}
+            self.download_progress = {'stage':'İndiriliyor','done':0,'total':len(eligible),'failed':0,
+                                      'skipped':len(unsupported),'current':'','errors':[],'format':fmt}
         def worker():
             manifest_path = DATA_DIR / 'download_manifest.json'
             try:
-                for index,clip_id in enumerate(targets):
+                last_error = None
+                repeated = 0
+                for index,clip_id in enumerate(eligible):
+                    if self.download_cancel.is_set():
+                        with self.lock:
+                            self.download_progress['stage'] = 'Kullanıcı durdurdu'
+                        break
                     with self.lock:
                         self.download_progress['current'] = catalog[clip_id].get('title') or clip_id
                     try:
-                        export_one(session,catalog[clip_id],fmt,DATA_DIR/'audio',self.download_manifest)
+                        export_one(session,catalog[clip_id],fmt,DATA_DIR/'audio',self.download_manifest, self.download_cancel)
                         save_manifest(manifest_path,self.download_manifest)
+                        repeated = 0
+                        last_error = None
                     except (DownloadError, ApiError, ValueError, OSError) as exc:
+                        if self.download_cancel.is_set():
+                            with self.lock:
+                                self.download_progress['stage'] = 'Kullanıcı durdurdu'
+                            break
+                        message = str(exc)[:180]
                         with self.lock:
                             self.download_progress['failed'] += 1
-                            self.download_progress['errors'].append({'id':clip_id,'error':str(exc)[:180]})
-                        if '403' in str(exc) or '429' in str(exc):
+                            if len(self.download_progress['errors']) < 30:
+                                self.download_progress['errors'].append({'id':clip_id,'error':message})
+                        repeated = repeated + 1 if last_error == message else 1
+                        last_error = message
+                        if '403' in message or '429' in message or repeated >= 3:
                             with self.lock:
-                                self.download_progress['stage'] = 'Suno indirmeyi reddetti; kuyruk durdu'
+                                self.download_progress['stage'] = 'Üç tekrarlı hata veya erişim reddi: kuyruk durduruldu'
                             break
                     finally:
                         with self.lock:
@@ -418,7 +453,9 @@ class Manager:
                     self.download_progress['errors'].append({'id':'queue','error':str(exc)[:180]})
             finally:
                 with self.lock:
-                    if self.download_progress['stage'] == 'İndiriliyor':
+                    if self.download_cancel.is_set() and self.download_progress['stage'] in ('İndiriliyor', 'Durduruluyor...'):
+                        self.download_progress['stage'] = 'Kullanıcı durdurdu'
+                    elif self.download_progress['stage'] == 'İndiriliyor':
                         self.download_progress['stage'] = 'Tamamlandı'
                     self.download_busy = False
         threading.Thread(target=worker,daemon=True).start()
@@ -441,7 +478,7 @@ manager = Manager()
 
 
 class Handler(SimpleHTTPRequestHandler):
-    server_version = 'EFSS-Local/0.5'
+    server_version = 'EFSS-Local/0.6'
 
     def log_message(self, fmt, *args):
         # No path/body/credential logging; use generic status reports only.
@@ -477,6 +514,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json(manager.status())
         if path == '/api/downloads':
             return self.send_json(manager.download_manifest_view())
+        if path == '/api/media-inventory':
+            return self.send_json(manager.media_inventory())
         if path == '/api/catalog':
             if manager.catalog is None:
                 return self.send_json({'error': 'Henüz katalog toplanmadı.'}, 404)
@@ -497,7 +536,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.guard(changing=True):
             return
         path = urlsplit(self.path).path
-        if path not in ('/api/connect', '/api/disconnect', '/api/sync', '/api/download'):
+        if path not in ('/api/connect', '/api/disconnect', '/api/sync', '/api/download', '/api/download/stop'):
             return self.send_json({'error': 'Bilinmeyen işlem.'}, 404)
         if self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
             return self.send_json({'error': 'JSON gerekli.'}, 415)
@@ -513,6 +552,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json({'connected': True})
             if path == '/api/disconnect':
                 return self.send_json(manager.disconnect())
+            if path == '/api/download/stop':
+                return self.send_json(manager.cancel_download())
             if path == '/api/download':
                 manager.start_download(body.get('ids'),body.get('format'))
                 return self.send_json({'started':True},202)
