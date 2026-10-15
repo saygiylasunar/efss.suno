@@ -34,9 +34,12 @@
    <button class="btn btn-primary full" type="button" id="collectorSync">Tüm Library + Workspace + Playlist'leri Tara</button>
    <button class="btn btn-outline full" type="button" id="collectorImport">Toplanan kataloğu arşive aktar</button>
    <hr><h3>↓ Yerel MP3 / WAV dışa aktarımı</h3>
-   <p class="help-caption">Dosyalar <code>data/audio/</code> altına yazılır, SHA-256 ile kayda geçirilir. Suno indirmeye izin vermezse işlem durur; kotalar aşılmaz.</p>
+   <p class="help-caption">İndirme başarısızlıklarını 250 eser boyunca tekrarlamamak için kaynak ön kontrolü ve durdurma eklendi. Suno oynatma bağlantıları yetkili indirme bağlantısı anlamına gelmez; izinli formatları resmî Suno İndir menüsünde kontrol et.</p>
    <label class="field-label">Format <select id="collectorFormat"><option value="mp3">MP3</option><option value="wav">WAV</option></select></label>
-   <button class="btn btn-outline full" type="button" id="collectorBatch">Filtredeki ilk 250 eksik eseri indir</button>
+   <button class="btn btn-outline full" type="button" id="collectorBatch">Filtredeki ilk 250 eksik eseri indir (ön denetimli)</button>
+   <button class="btn btn-outline full" type="button" id="collectorStop" disabled>■ İndirmeyi durdur</button>
+   <button class="btn btn-outline full" type="button" id="collectorInspectMedia">♫ Medya alanlarını denetle (MP3/M4A/WAV/MP4)</button>
+   <div class="text-panel" id="collectorMediaResult">Yalnızca katalogdaki alanları ve kaynak alan adlarını gösterir; dosya indirmez.</div>
    <div class="text-panel" id="collectorDownloadStatus">Henüz indirme yapılmadı.</div>
   </div>`;
   document.body.appendChild(dialog);
@@ -82,9 +85,11 @@
       $('collectorSync').disabled = !current.connected || current.syncing;
       $('collectorImport').disabled = !current.catalogCount;
       $('collectorBatch').disabled = !current.connected || !current.catalogCount || current.downloadBusy || current.syncing;
+      $('collectorStop').disabled = !current.downloadBusy;
+      const skipped = current.downloadProgress?.skipped || 0;
       const progress=current.downloadProgress||{};
       const last=(progress.errors||[]).slice(-2).map(x=>x.id.slice(0,8)+': '+x.error).join(' · ');
-      $('collectorDownloadStatus').textContent=`${progress.stage||'Hazır'} · ${progress.done||0}/${progress.total||0} · Hata ${progress.failed||0} · ${progress.current||''} ${last}`;
+      $('collectorDownloadStatus').textContent=`${progress.stage||'Hazır'} · ${progress.done||0}/${progress.total||0} · Hata ${progress.failed||0} · Ön denetimde atlanan ${skipped} · ${progress.current||''} ${last}`;
       const fingerprint=[progress.stage,progress.done,progress.total,progress.failed].join(':');
       if (!current.downloadBusy && progress.done && latestCompleted !== fingerprint) {
         latestCompleted=fingerprint;
@@ -99,6 +104,7 @@
       $('collectorSync').disabled = true;
       $('collectorImport').disabled = true;
       $('collectorBatch').disabled = true;
+      $('collectorStop').disabled = true;
     }
   }
   async function manifest(){return api('/api/downloads');}
@@ -129,6 +135,23 @@
   });
   new MutationObserver(()=>{if(document.getElementById('efssFormatStatus'))formatLabels();})
     .observe(document.getElementById('detailBody'),{childList:true});
+  $('collectorStop').addEventListener('click', async () => {
+    try {
+      const result = await api('/api/download/stop', 'POST', {});
+      $('collectorDownloadStatus').textContent = result.message || 'Durdurma istendi.';
+      await status();
+    } catch (error) {say('İndirmeyi durdurma hatası: '+error.message);}
+  });
+  $('collectorInspectMedia').addEventListener('click', async () => {
+    try {
+      const report = await api('/api/media-inventory');
+      const rows = Object.entries(report.formats).map(([fmt,item]) => {
+        const hosts = Object.entries(item.hosts).map(([host,num])=>host+' ('+num+')').join(', ') || '—';
+        return fmt.toUpperCase() + ': ' + item.present + ' kayıtta · host: ' + hosts;
+      });
+      $('collectorMediaResult').textContent = 'Toplam '+report.totalSongs+' eser. '+rows.join(' | ')+'\nNot: Bu dosya alanları indirme izni anlamına gelmez.';
+    } catch (error) {$('collectorMediaResult').textContent = 'Tanılama hatası: '+error.message;}
+  });
   $('collectorBatch').addEventListener('click',async()=>{
     try{
       const fmt=$('collectorFormat').value;

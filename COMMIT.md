@@ -26,3 +26,11 @@
 - Embedded Vivaldi cookie-location instructions and local-only security notes.
 - Python single-session lifecycle: connectedAt status (no secret), disconnect and busy guard.
 - Acceptance: CI SUCCESS on exact head; user Vivaldi real account test; no credentials in repo.
+
+## 2026-10-15 — v0.6 source diagnostics and cancellation
+- Parent exact head `b571fb39241c774ac96124f0f1221957dfda6828` / PR #4.
+- Branch `fix/audio-source-preflight-v0.6`; Son kullanıcı logu: 5/250 aynı URL allowlist hatası.
+- Added cooperative download cancellation and /api/download/stop, MP3 preflight, same-error circuit breaker.
+- Added safe media_inventory counts for MP3/M4A/WAV/MP4 fields (hostname only, no path or token).
+- No broad wildcard CDN allowlist, no download restriction bypass. Next: user Vivaldi read-only metadata / hostname diagnostic and official export integration.
+- Acceptance: exact-head CI SUCCESS and Windows smoke. Keep PR DRAFT OPEN UNMERGED.

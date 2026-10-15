@@ -5,6 +5,15 @@
 ![Version](https://img.shields.io/badge/version-0.2.0-AC95DA) ![Mode](https://img.shields.io/badge/mode-local--first-78C5B2)
 
 
+## v0.6 — İndirme durdurma ve medya kaynağı tanılaması (2026-10-15)
+
+- **İndirmeyi durdur**: açık kuyruk için localhost `POST /api/download/stop`; worker her eser öncesinde ve aktarımın parça okumasında iptal bayrağını kontrol eder. Açık ağ isteği/erişim gecikmesi kısa süreyle devam edebilir.
+- **Ön denetim**: MP3 seçimi için kaynak adreslerini indirme başlamadan mevcut güvenli allowlist ile sınar. Kaynakların hiçbiri uygun değilse 250 kere aynı hatayı tekrarlamak yerine işlemi reddeder ve kaynak alan adlarını bildirir.
+- **Otomatik devre kesici**: arka arkaya aynı hata üç kez olursa veya HTTP 403/429 alınırsa kuyruk durur.
+- **Medya alanlarını denetle**: Katalogda `audio_url` (MP3), `m4a_url`, `wav_url`, `video_url/mp4_url` alanlarını yalnız okur. Alan adı bazında sayı verir; tam URL, signed token, path veya session bilgisi göstermez. Bulunan alanlar resmî indirme hakkını kanıtlamaz.
+- **Suno koşulları**: Oynatma bağlantısını indirme hakkının yerine kullanmak mümkün olduğuna dair garanti yoktur. Resmî MP3/WAV/video dışa aktarımları Suno'nun İndir menüsü ve hesap hakkına bağlıdır. Sayfadaki ağ trafiğini topluca indirmenin kota atlatan bir aracı olarak yeni indirme mekanizması yazılmadı.
+- **Doğrulama**: CI mock testleri; gerçek Suno üretim sistemiyle indirme testleri bekliyor.
+
 ## v0.5 — Oturumlar (görünür bağlantı durumu)
 
 - **Soldaki “Oturumlar”** alanından bağlantıyı aç. Üst çubukta **Oturumlar / Suno** kısayolu da vardır. Badge: **Bağlı**, **Bağlı değil** veya **Çevrimdışı**.

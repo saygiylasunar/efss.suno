@@ -47,3 +47,9 @@
 - Vivaldi F12 çerez bulma adımları, yerel oturum güvenlik açıklamaları.
 - Collector oturum başlangıç zamanı (gizli bilgi içermez), açık işler varken oturum değiştirme/kapama koruması.
 - Yeni Node arayüz sözleşmesi ve Python oturum testi.
+
+## v0.6.0 — 2026-10-15
+- Kuyruk durdurma butonu ve API; parça aktarımında iptal kontrolü.
+- Desteklenmeyen MP3 kaynakları için 250 iş öncesi kontrol; üç tekrar hata devre kesici.
+- MP3/M4A/WAV/MP4 metadata alanları ve kaynak alan adlarını gösteren güvenli tanılama.
+- Suno'nun resmî indirme kuralları korunur; sayfa varlığı doğrudan indirme yetkisi değildir.
