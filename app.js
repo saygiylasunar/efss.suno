@@ -170,7 +170,7 @@
     const eventHistory=state.activity.filter(e=>e.id===id).slice(-20).reverse();
     $('detailBody').innerHTML=`<div class="detail-art">${cover(song,'detail-cover')}<div><div class="detail-title">${h(song.title)}</div><div class="detail-id">${h(song.id)}</div></div></div>
       <div class="detail-actions"><button type="button" data-detail-status="downloaded" class="${st==='downloaded'?'active downloaded':''}">✓ İndirdim</button><button type="button" data-detail-status="missing" class="${st==='missing'?'active missing':''}">✕ İndirmedim</button><button type="button" data-detail-status="unknown" class="${st==='unknown'?'active':''}">? Belirsiz</button></div>
-      <div class="detail-section"><a href="${h(song.link)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">↗ Suno’da Aç / Resmî Download</a></div>
+      <div class="detail-section"><button type="button" class="btn btn-soft" data-refresh-suno="${h(song.id)}">↻ Bu şarkının metadata bilgisini Suno’dan getir</button> <a class="btn btn-outline" target="_blank" rel="noopener noreferrer" href="${h(song.link)}">↗ Suno’da Aç / Resmî Download</a></div>
       <div class="detail-section"><h3>Metadata / Özellikler</h3><div class="meta-grid">${metaTile('Oluşturulma',fullDate(song.date))}${metaTile('Model',song.model)}${metaTile('Dinlenme',song.plays===null?'—':fmtNumber.format(song.plays))}${metaTile('Süre',song.duration===null?'—':`${Math.floor(song.duration/60)}:${String(Math.floor(song.duration%60)).padStart(2,'0')}`)}${metaTile('Koleksiyonlar',song.workspaces.join(', '))}${metaTile('Playlistler',assignedPlaylists.map(p=>p.name).join(', '))}${metaTile('İşlem / Type',song.task||'Original')}${metaTile('Beğeni',song.liked?'Liked':song.disliked?'Disliked':'—')}${metaTile('Özellikler',[song.stem?'Stem':'',song.isRemix?'Remix':'',song.isCover?'Cover':'',song.instrumental?'Instrumental':''].filter(Boolean).join(', '))}${metaTile('Son işaretleme',flag.updatedAt?fullDate(flag.updatedAt):'—')}${metaTile('Durum kaynağı',flag.source||'—')}</div></div>
       <div class="detail-section"><h3>Style of Music</h3><div class="text-panel">${val(song.style)}</div></div>
       ${song.negativeStyle?`<div class="detail-section"><h3>Excluded Styles</h3><div class="text-panel">${h(song.negativeStyle)}</div></div>`:''}
@@ -182,6 +182,7 @@
       <div class="detail-section"><h3>İşlem geçmişi (${eventHistory.length})</h3>${eventHistory.length?eventHistory.map(event=>`<div class="activity-row">${h(event.detail)}<time>${h(fullDate(event.at))}</time></div>`).join(''):'<div class="text-panel">Bu esere ait işlem kaydı yok.</div>'}</div>
       <div class="detail-section"><h3>Raw metadata</h3><details><summary style="cursor:pointer;font-size:12px;color:#c4afe3">Ham JSON alanlarını görüntüle</summary><div class="text-panel" style="margin-top:10px;font-size:10px">${h(raw)}</div></details></div>`;
     $('detailBody').querySelectorAll('[data-detail-status]').forEach(b=>b.addEventListener('click',()=>setFlag(id,b.dataset.detailStatus)));
+    $('detailBody').querySelector('[data-refresh-suno]').addEventListener('click',()=>window.SunoEFSSFetchSong?.(id) ?? toast('Önce Collector oturumunu bağla.'));
     $('saveNote').addEventListener('click',()=>setFlag(id,songStatus(id),'manual',$('detailNote').value));
     $('detailBody').querySelectorAll('[data-toggle-playlist]').forEach(input=>input.addEventListener('change',()=>togglePlaylistMember(input.dataset.togglePlaylist,id,input.checked)));
   }
@@ -303,10 +304,10 @@
     }
     $('openNextDownload').addEventListener('click',()=>{
       const next=filtered.find(x=>songStatus(x.id)!=='downloaded');
-      if(!next){toast('Filtrede indirilecek başka eser bulunamadı.');return;}
+      if(!next){toast('Geçerli filtrede indirilecek başka eser bulunamadı.');return;}
       openDetail(next.id);
-      window.open(next.link, '_blank', 'noopener,noreferrer');
-      toast('Suno resmi Download menüsünden indir ve sonra bu eseri işaretle: '+next.title);
+      window.open(next.link,'_blank','noopener,noreferrer');
+      toast('Suno üzerinde resmî Download ile indir, ardından arşivde işaretle: '+next.title);
     });
     $('clearFilters').addEventListener('click',resetFilters);
     $('resetNav').addEventListener('click',resetFilters);

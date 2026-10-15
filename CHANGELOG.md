@@ -1,3 +1,12 @@
+## v0.3.0 — Read-only Catalog Collector (2026-10-14)
+
+- Local Python loopback server, memory-only session authentication, strict Host/Origin checks.
+- Cursor-paged library, workspace feeds, disliked/stem passes, playlist member pagination, progress/status.
+- Local catalog JSON snapshot (credentials excluded), browser import preserves flags and notes.
+- Per-song metadata refresh and open-in-Suno official download flow; next-pending-song shortcut.
+- 7 Python mock/network-security tests + 12 existing JS core tests; no live Suno account verification.
+- No automatic MP3/WAV export and no bypass of Pro download credits.
+
 # Changelog
 
 ## v0.2.0 — 2026-10-14

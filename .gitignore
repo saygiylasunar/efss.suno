@@ -12,7 +12,8 @@ catalog.csv
 workspaces.json
 sunoEFSS-backup-*.json
 sunoEFSS-flags-*.csv
-# Private local song metadata and login material
-/data/
+
+# Local Suno catalog and credentials never go to GitHub
+data/
 .env
 *.cookie

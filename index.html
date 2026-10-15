@@ -18,7 +18,7 @@
       <button class="nav-item" type="button" id="showDownloaded"><span>✓</span> İndirilenler</button>
       <div class="side-label space-top">KOLEKSİYONLAR</div>
       <div id="workspaceNav" class="workspace-nav"></div><div class="side-label space-top">KAYITLI PLAYLISTLER</div><div id="playlistNav" class="workspace-nav"></div>
-      <div class="side-bottom"><span class="online-dot"></span> Yalnızca yerel · Hesap bağlantısı yok<small>EFSS ARCHIVE / PREVIEW 0.1</small></div>
+      <div class="side-bottom"><span class="online-dot"></span> Yalnızca yerel · Hesap bağlantısı yok<small>EFSS ARCHIVE / COLLECTOR 0.3</small></div>
     </aside>
 
     <main class="main-content">
@@ -34,7 +34,7 @@
       <div class="content-wrap">
         <section class="title-row">
           <div><div class="eyebrow">✦ THE ARCHIVE / 2026</div><h1>Music <em>Library</em><span class="title-spark"> ✧</span></h1><p>Suno koleksiyonunu düzenle, işaretle, keşfet. Tüm kayıtlar cihazında kalır.</p></div>
-          <div class="title-actions"><button type="button" id="openNextDownload" class="btn btn-outline">Sıradaki indirme</button><button class="btn btn-soft" id="openGuide" type="button">ⓘ Nasıl çalışır?</button></div>
+          <div class="title-actions"><button class="btn btn-outline" id="openNextDownload" type="button">↗ Sıradaki indirilmeyen</button><button class="btn btn-soft" id="openGuide" type="button">ⓘ Nasıl çalışır?</button></div>
         </section>
 
         <section class="stat-grid" aria-label="Arşiv istatistikleri">
@@ -90,6 +90,6 @@
   </dialog>
   <dialog id="guideDialog"><div class="dialog-head"><h2>Arşiv nasıl çalışır?</h2><button class="close-btn" id="closeGuide">✕</button></div><div class="guide-body"><p><strong>Gizlilik öncelikli:</strong> Suno giriş çerezi, şifre veya API anahtarı istemez. Bilgiler tarayıcının IndexedDB deposunda saklanır. Bu sürüm Suno hesabına bağlanmaz ve internetten otomatik ses indirmez.</p><ol><li><b>Katalog ekle</b> ile Suno katalog JSON veya CSV dosyanı yükle. İstersen uygulamanın önceki yedek JSON'unu da içe aktar.</li><li><b>Workspace JSON</b> ile Suno çalışma alanlarını içe aktar. Eserlerin <code>_workspaces</code> alanı varsa otomatik kullanılır.</li><li><b>İndirdim / İndirmedim / Belirsiz</b> seçenekleriyle her eser için durumu elle belirle; not ekle.</li><li><b>Dosya klasörü tara</b> ile isimlerinde en az ilk 8 karakteriyle Suno eser ID'si bulunan yerel ses dosyalarını indirilmiş olarak işaretle. İşlem öncesinde onay ister.</li><li><b>Link ekle</b> ile tekil eser veya playlist URL’si kaydet. Playlist altında eser bağlantılarını satır satır da ekleyebilirsin. Şarkının detayından kayıtlı playlistlerle ilişkilendir.</li><li><b>Yedeği dışa aktar</b> ile eserleri, flag'leri, çalışma alanlarını ve işlem geçmişini JSON olarak indir. CSV butonu durum özetini dışa aktarır.</li></ol><p class="warning"><b>Önemli:</b> Yedek JSON içine şarkı sözleri, promptlar ve diğer metadata da girer. Dosyayı özel bir konumda sakla. Tarayıcı verilerini silersen yerel arşiv de silinebilir; sık sık JSON yedeği al.</p></div><button class="btn btn-primary full" id="doneGuide">Anladım</button></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="core.js"></script><script src="app.js"></script>
+  <script src="core.js"></script><script src="app.js"></script><script src="connect.js"></script>
 </body>
 </html>

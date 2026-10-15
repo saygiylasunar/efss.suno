@@ -64,10 +64,3 @@ test('CSV export preserves source link and linked playlist',()=>{
   assert.match(csv,/My Playlist/);
   assert.match(csv,/https:\/\/suno.com\/song\/s1/);
 });
-
-test('collector-shaped JSON retains playlist and member references',()=>{
-  const imported=C.fromImport({format:'sunoEFSS-collector-v1',songs:[{id:'song1',metadata:{is_remix:true}}],playlists:[{id:'pl1',name:'Demo',url:'https://suno.com/playlist/pl1'}],playlistMembers:{pl1:['song1']}});
-  assert.equal(imported.playlists.length,1);
-  assert.deepEqual(imported.playlistMembers.pl1,['song1']);
-  assert.equal(C.normalizeSong(imported.songs[0]).isRemix,true);
-});

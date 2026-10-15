@@ -1,46 +1,12 @@
-# EFSS Suno — Development Log
+# EFSS Suno — Flight Log / Handover
 
-## 2026-10-14 | GitHub bootstrap (v0.2)
-
-**Repository:** `saygiylasunar/efss.suno`  
-**Branch:** `feat/bootstrap-archiver-v0.2`  
-**Merge policy:** draft PR; do not merge until browser smoke test and CI pass.
-
-### Included
-- Offline-first HTML/CSS/JS library inspector imported from the local v0.2 prototype.
-- IndexedDB user flags, notes and audit events.
-- CSV/JSON import; CSV export and JSON backup.
-- Suno song/playlist links, manually managed membership, metadata drawer, sorting and filters.
-- GitHub Actions test workflow and Node core unit tests.
-
-### Verified
-- Local `node --test tests/core.test.cjs`: **12 passed, 0 failed** on 2026-10-14.
-- GitHub build and browser E2E not yet verified; no live Suno account imported.
-
-### Non-goals / security
-- No Suno password, session cookie, API keys or real account data committed.
-- No automatic access to private Suno library and no automated audio download.
-- Browser flags are not file-integrity proofs; metadata-only and manual-link import is supported.
-
-### Acceptance gates
-- [x] Repo identified and source pushed to feature branch.
-- [x] Local core tests pass.
-- [ ] GitHub Actions tests pass on current PR head.
-- [ ] Vivaldi/Windows browser smoke test: open, import, filter, flag, export, reload.
-- [ ] Verify JSON backup round-trip and playlist membership persistence in a real browser.
-
-### Next slices
-1. Opt-in read-only Suno catalog acquisition design (no credential copying into GitHub).
-2. Per-format MP3/WAV/stem archive state and batch flag management.
-3. Verified local-file mapping with user confirmation, hash and size.
-4. Timeline, history filters and song/playlist relationship graph.
-
-
-## 2026-10-14 — Catalog import hardening and official download queue
-- Parent: feat/bootstrap-archiver-v0.2 @ 7504bac8b758d60bc3e16dac1476e7d9bda5f3a4
-- Working branch: feat/catalog-collector
-- GitHub changes: next-pending song opens official Suno Download page, detail link, import preserves playlists/remix, private data ignored, new regression test.
-- Local-only prototype: read-only Python collector / connected UI prepared and mocked; not yet committed to this GitHub branch, and no live Suno test.
-- Required: backend integration, exact-head CI SUCCESS, Vivaldi live account smoke test, metadata reconciliation, archive backup test.
-- No automated WAV/MP3 exports; Suno official download allowances remain applicable.
-- PR stays DRAFT/OPEN/UNMERGED until accepted.
+## 2026-10-14 · v0.3 Collector slice
+- Parent PR: #1 `feat/bootstrap-archiver-v0.2` (draft, unmerged).
+- New slice: `feat/read-only-catalog-collector-v0.3` branched from exact `7504bac8b758d60bc3e16dac1476e7d9bda5f3a4`.
+- Deliverables: `collector.py`, `connect.js`, UI integration, mock tests, docs and CI update.
+- Tests locally: 12 Node + 7 Python = 19 passing; real Suno live account remains UNVERIFIED.
+- Security: credentials held only in Python RAM, public GitHub excludes `data/`; server binds 127.0.0.1; auth only Clerk; metadata read-only.
+- No automatic MP3/WAV export; direct user-initiated Suno download queue/link instead.
+- Acceptance: confirm Vivaldi login, 100% unique clip count, playlist paging completeness, field coverage, persistence/re-import, official download flag workflow.
+- Keep PR draft/unmerged until exact-head GitHub CI success and human live-account smoke test.
+2026-10-15: read-only v0.3 Collector imported into v0.4 working branch; live Suno account validation pending.
