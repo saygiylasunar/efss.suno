@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.env*
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.aiff
+*.ogg
+catalog.json
+catalog.csv
+workspaces.json
+sunoEFSS-backup-*.json
+sunoEFSS-flags-*.csv
+
+# Local Suno catalog and credentials never go to GitHub
+data/
+.env
+*.cookie

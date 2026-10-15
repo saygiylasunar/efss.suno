@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Suno EFSS — Music Archive v0.5</title>
+  <meta name="description" content="Tamamen yerel, özel ve denetlenebilir Suno müzik envanteri." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Ana menü">
+      <div class="brand"><span class="logo">◈</span><span><strong>EFSS<span class="brand-accent">/</span>SUNO</strong><small>PERSONAL MUSIC ARCHIVE</small></span></div>
+      <div class="side-label">ÇALIŞMA ALANI</div>
+      <button class="nav-item active" type="button" id="resetNav"><span>▤</span> Bütün arşiv <span class="nav-count" id="sidebarCount">0</span></button>
+      <button class="nav-item" type="button" id="showMissing"><span>◌</span> İndirilmeyenler</button>
+      <button class="nav-item" type="button" id="showDownloaded"><span>✓</span> İndirilenler</button>
+      <div class="side-label space-top">SUNO OTURUMU</div>
+      <button class="nav-item" type="button" id="openSessionPanel" aria-label="Suno oturumunu bağla veya yönet"><span>⇄</span> Oturumlar <span class="nav-count" id="sessionBadge" aria-live="polite">Kontrol…</span></button>
+      <div class="side-label space-top">KOLEKSİYONLAR</div>
+      <div id="workspaceNav" class="workspace-nav"></div><div class="side-label space-top">KAYITLI PLAYLISTLER</div><div id="playlistNav" class="workspace-nav"></div>
+      <div class="side-bottom"><span class="online-dot"></span> <span id="sessionFooter">Collector durumu kontrol ediliyor…</span><small>EFSS ARCHIVE / SESSION 0.5</small></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb">ARCHIVE <span>/</span> <strong>LIBRARY</strong> <span class="data-pill real" id="libraryPill">LOCAL LIBRARY</span></div>
+        <div class="top-actions">
+          <button class="btn btn-soft" type="button" id="openLinkDialog">⌁ Link ekle</button>
+          <label class="icon-btn import-label" title="Katalog içe aktar"><input type="file" id="catalogInput" accept=".json,.csv,application/json,text/csv" hidden />＋ <span>Katalog ekle</span></label>
+          <button class="btn btn-outline" id="exportFlags" type="button">↓ CSV</button>
+          <button class="btn btn-primary" id="exportBackup" type="button">↓ Yedeği dışa aktar</button>
+        </div>
+      </header>
+      <div class="content-wrap">
+        <section class="title-row">
+          <div><div class="eyebrow">✦ THE ARCHIVE / 2026</div><h1>Music <em>Library</em><span class="title-spark"> ✧</span></h1><p>Suno koleksiyonunu düzenle, işaretle, keşfet. Tüm kayıtlar cihazında kalır.</p></div>
+          <div class="title-actions"><button class="btn btn-outline" id="openNextDownload" type="button">↗ Sıradaki indirilmeyen</button><button class="btn btn-soft" id="openGuide" type="button">ⓘ Nasıl çalışır?</button></div>
+        </section>
+
+        <section class="stat-grid" aria-label="Arşiv istatistikleri">
+          <div class="stat"><div class="stat-name">TOPLAM ESER <span>♫</span></div><strong id="statTotal">0</strong><small>Tekil kayıtlar</small></div>
+          <div class="stat"><div class="stat-name">İNDİRİLDİ <span>↧</span></div><strong id="statDownloaded">0</strong><small>Elle veya dosya eşleşmesi</small></div>
+          <div class="stat"><div class="stat-name">İNDİRİLMEDİ <span>◌</span></div><strong id="statMissing">0</strong><small>İndirilmedi olarak işaretlenen</small></div>
+          <div class="stat"><div class="stat-name">BELİRSİZ <span>◷</span></div><strong id="statUnknown">0</strong><small>Henüz kontrol edilmeyen</small></div>
+        </section>
+
+        <section class="library-section">
+          <div class="section-heading"><div><div class="eyebrow">YOUR COLLECTION</div><h2>Arşiv kayıtları <span id="filteredCount">0 eser</span></h2></div><div class="section-tools"><label class="btn btn-outline folder-label" title="Suno ID içeren yerel ses dosyalarını eşleştir"><input type="file" id="audioFolder" webkitdirectory directory multiple hidden />▣ Dosya klasörü tara</label><label class="btn btn-outline" title="Workspace JSON dosyası ekle"><input id="workspaceInput" type="file" accept=".json,application/json" hidden />⊞ Workspace JSON</label></div></div>
+          <div class="filters">
+            <label class="searchbox"><span>⌕</span><input id="search" type="search" placeholder="Başlık, ID, söz, style veya prompt ara..." autocomplete="off" /></label>
+            <select id="statusFilter" aria-label="İndirme durumu"><option value="all">Tüm indirme durumları</option><option value="downloaded">İndirildi</option><option value="missing">İndirilmedi</option><option value="unknown">Belirsiz</option></select>
+            <select id="kindFilter" aria-label="Tür ve beğeni"><option value="all">Tüm türler</option><option value="liked">♥ Liked</option><option value="disliked">Disliked</option><option value="stem">Stem</option><option value="remix">Remix</option><option value="cover">Cover</option><option value="instrumental">Instrumental</option></select>
+            <select id="modelFilter" aria-label="Model"><option value="all">Tüm modeller</option></select>
+            <select id="workspaceFilter" aria-label="Çalışma alanı"><option value="all">Bütün koleksiyonlar</option></select><select id="playlistFilter" aria-label="Suno playlisti"><option value="all">Tüm playlistler</option></select>
+          </div>
+          <div class="datebar">
+            <label>Başlangıç <input id="dateFrom" type="date" /></label>
+            <label>Bitiş <input id="dateTo" type="date" /></label>
+            <label>Sırala <select id="sort"><option value="newest">En yeni → en eski</option><option value="oldest">En eski → en yeni</option><option value="plays">En çok dinlenen</option><option value="title">Başlık (A–Z)</option></select></label>
+            <button class="btn-link" type="button" id="clearFilters">Filtreleri temizle</button>
+            <span class="help-caption">Liste tarihsel olarak sıralanır · Kayıt için satıra tıkla</span>
+          </div>
+          <div id="playlistBanner" class="playlist-banner" hidden></div>
+          <div class="table-wrap"><table class="tracks"><thead><tr><th>ESER</th><th>OLUŞTURULMA</th><th>MODEL</th><th>ETİKETLER</th><th>İNDİRME DURUMU</th><th></th></tr></thead><tbody id="trackRows"></tbody></table><div class="empty" id="empty" hidden><span>♪</span><strong>Henüz eser bulunamadı</strong><p>Bir katalog içe aktarabilir veya filtrelerini temizleyebilirsin.</p><button class="btn btn-soft" id="emptyImport">Katalog ekle</button></div></div>
+          <footer class="table-footer"><span id="pagingInfo">0 eser</span><div><button class="btn btn-outline" id="prevPage">← Önceki</button><span id="pageDisplay">1 / 1</span><button class="btn btn-outline" id="nextPage">Sonraki →</button></div></footer>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="overlay" id="overlay" hidden></div>
+  <aside class="detail" id="detail" aria-label="Eser ayrıntıları" aria-modal="true" role="dialog" hidden>
+    <div class="detail-header"><span>ESER KARTI / METADATA</span><button class="close-btn" id="closeDetail" aria-label="Kapat">✕</button></div>
+    <div class="detail-body" id="detailBody"></div>
+  </aside>
+  <dialog id="linkDialog" class="link-dialog">
+    <form method="dialog" id="linkForm">
+      <div class="dialog-head"><h2>⌁ Suno bağlantısı ekle</h2><button type="button" class="close-btn" id="closeLinkDialog" aria-label="Kapat">✕</button></div>
+      <div class="guide-body">
+        <p>Bir <strong>şarkı</strong> veya <strong>playlist</strong> bağlantısını yerel arşive ekle.</p>
+        <label class="field-label">Suno URL<input type="url" id="linkUrl" required placeholder="https://suno.com/playlist/..." autocomplete="off" /></label>
+        <p id="linkTypeInfo" class="help-caption">Desteklenen: /song/ID, /s/ID, /playlist/ID</p>
+        <label class="field-label">Başlık / kişisel ad<input type="text" id="linkTitle" maxlength="150" placeholder="Başlık girin (isteğe bağlı)" /></label>
+        <div id="songPlaylistSelector"><label class="field-label">Playlist'e iliştir (isteğe bağlı)<select id="linkPlaylistSelect"><option value="">Playlist yok</option></select></label></div>
+        <div id="playlistSongLinks" hidden><label class="field-label">Playlistteki tekil şarkı URL'leri (isteğe bağlı)<textarea id="playlistSongUrls" rows="4" placeholder="Her satıra bir https://suno.com/song/... bağlantısı"></textarea></label><p class="help-caption">Playlisti yalnızca URL ile de kaydedebilirsin. Üyeleri daha sonra ekleyebilirsin.</p></div>
+        <p class="warning"><b>Not:</b> Suno'nun görünür eserlerini buradan otomatik çekmiyoruz. Bağlantı kaydı ve yerel üyelik yönetimi yapılır.</p>
+      </div>
+      <button type="submit" class="btn btn-primary full">Bağlantıyı kaydet</button>
+    </form>
+  </dialog>
+  <dialog id="guideDialog"><div class="dialog-head"><h2>Arşiv nasıl çalışır?</h2><button class="close-btn" id="closeGuide">✕</button></div><div class="guide-body"><p><strong>İki çalışma modu:</strong> Statik sayfa çevrimdışıdır. Gerçek Suno Library/Playlist verileri için <code>py collector.py</code> ile <code>http://localhost:8080</code> adresini aç ve soldaki <b>Oturumlar</b> alanından kendi oturumunu bağla. Giriş bilgilerini sohbete veya GitHub'a gönderme. Collector yalnız RAM'de tek aktif oturum tutar.</p><ol><li><b>Katalog ekle</b> ile Suno katalog JSON veya CSV dosyanı yükle. İstersen uygulamanın önceki yedek JSON'unu da içe aktar.</li><li><b>Workspace JSON</b> ile Suno çalışma alanlarını içe aktar. Eserlerin <code>_workspaces</code> alanı varsa otomatik kullanılır.</li><li><b>İndirdim / İndirmedim / Belirsiz</b> seçenekleriyle her eser için durumu elle belirle; not ekle.</li><li><b>Dosya klasörü tara</b> ile isimlerinde en az ilk 8 karakteriyle Suno eser ID'si bulunan yerel ses dosyalarını indirilmiş olarak işaretle. İşlem öncesinde onay ister.</li><li><b>Link ekle</b> ile tekil eser veya playlist URL’si kaydet. Playlist altında eser bağlantılarını satır satır da ekleyebilirsin. Şarkının detayından kayıtlı playlistlerle ilişkilendir.</li><li><b>Yedeği dışa aktar</b> ile eserleri, flag'leri, çalışma alanlarını ve işlem geçmişini JSON olarak indir. CSV butonu durum özetini dışa aktarır.</li></ol><p class="warning"><b>Önemli:</b> Yedek JSON içine şarkı sözleri, promptlar ve diğer metadata da girer. Dosyayı özel bir konumda sakla. Tarayıcı verilerini silersen yerel arşiv de silinebilir; sık sık JSON yedeği al.</p></div><button class="btn btn-primary full" id="doneGuide">Anladım</button></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="core.js"></script><script src="app.js"></script><script src="connect.js"></script>
+</body>
+</html>
