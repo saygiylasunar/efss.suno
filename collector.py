@@ -17,6 +17,7 @@ import secrets
 import threading
 import time
 import uuid
+from downloads import DownloadError, export_one, read_manifest, save_manifest, validate_queue
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -300,6 +301,9 @@ class Manager:
         self.last_synced_at = None
         self.lock = threading.Lock()
         self.catalog = None
+        self.download_busy = False
+        self.download_progress = {'stage':'Hazır','done':0,'total':0,'failed':0,'current':'','errors':[]}
+        self.download_manifest = read_manifest(DATA_DIR / 'download_manifest.json')
         path = DATA_DIR / 'catalog.json'
         if path.is_file():
             try:
@@ -319,7 +323,8 @@ class Manager:
             return {'connected': self.session is not None, 'syncing': self.syncing,
                     'progress': dict(self.progress), 'error': self.last_error,
                     'lastSyncedAt': self.last_synced_at,
-                    'catalogCount': len((self.catalog or {}).get('songs') or [])}
+                    'catalogCount': len((self.catalog or {}).get('songs') or []),
+                    'downloadBusy':self.download_busy,'downloadProgress':dict(self.download_progress)}
 
     def update_progress(self, **kwargs):
         with self.lock:
@@ -353,6 +358,56 @@ class Manager:
                 with self.lock:
                     self.syncing = False
         threading.Thread(target=worker, daemon=True).start()
+
+    def download_manifest_view(self):
+        # Read last atomically saved snapshot; never serialize mutable worker state.
+        return read_manifest(DATA_DIR / 'download_manifest.json')
+
+    def start_download(self, ids, fmt):
+        with self.lock:
+            if self.download_busy:
+                raise ValueError('İndirme kuyruğu çalışıyor.')
+            if self.syncing:
+                raise ValueError('Katalog taraması sürerken indirme yapılamaz.')
+            if not self.session:
+                raise ValueError('Önce kendi Suno oturumunu bağla.')
+            catalog = {c['id']:c for c in (self.catalog or {}).get('songs',[]) if isinstance(c,dict) and c.get('id')}
+            targets = validate_queue(ids,fmt,catalog)
+            session = self.session
+            self.download_busy = True
+            self.download_progress = {'stage':'İndiriliyor','done':0,'total':len(targets),'failed':0,
+                                      'current':'','errors':[],'format':fmt}
+        def worker():
+            manifest_path = DATA_DIR / 'download_manifest.json'
+            try:
+                for index,clip_id in enumerate(targets):
+                    with self.lock:
+                        self.download_progress['current'] = catalog[clip_id].get('title') or clip_id
+                    try:
+                        export_one(session,catalog[clip_id],fmt,DATA_DIR/'audio',self.download_manifest)
+                        save_manifest(manifest_path,self.download_manifest)
+                    except (DownloadError, ApiError, ValueError, OSError) as exc:
+                        with self.lock:
+                            self.download_progress['failed'] += 1
+                            self.download_progress['errors'].append({'id':clip_id,'error':str(exc)[:180]})
+                        if '403' in str(exc) or '429' in str(exc):
+                            with self.lock:
+                                self.download_progress['stage'] = 'Suno indirmeyi reddetti; kuyruk durdu'
+                            break
+                    finally:
+                        with self.lock:
+                            self.download_progress['done'] = index + 1
+                    time.sleep(1)
+            except Exception as exc:
+                with self.lock:
+                    self.download_progress['stage'] = 'Kuyruk hatası'
+                    self.download_progress['errors'].append({'id':'queue','error':str(exc)[:180]})
+            finally:
+                with self.lock:
+                    if self.download_progress['stage'] == 'İndiriliyor':
+                        self.download_progress['stage'] = 'Tamamlandı'
+                    self.download_busy = False
+        threading.Thread(target=worker,daemon=True).start()
 
     def single(self, clip_id):
         with self.lock:
@@ -406,6 +461,8 @@ class Handler(SimpleHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == '/api/status':
             return self.send_json(manager.status())
+        if path == '/api/downloads':
+            return self.send_json(manager.download_manifest_view())
         if path == '/api/catalog':
             if manager.catalog is None:
                 return self.send_json({'error': 'Henüz katalog toplanmadı.'}, 404)
@@ -426,7 +483,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.guard(changing=True):
             return
         path = urlsplit(self.path).path
-        if path not in ('/api/connect', '/api/disconnect', '/api/sync'):
+        if path not in ('/api/connect', '/api/disconnect', '/api/sync', '/api/download'):
             return self.send_json({'error': 'Bilinmeyen işlem.'}, 404)
         if self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
             return self.send_json({'error': 'JSON gerekli.'}, 415)
@@ -444,6 +501,9 @@ class Handler(SimpleHTTPRequestHandler):
                 with manager.lock:
                     manager.session = None
                 return self.send_json({'connected': False})
+            if path == '/api/download':
+                manager.start_download(body.get('ids'),body.get('format'))
+                return self.send_json({'started':True},202)
             ids = body.get('playlistIds') or []
             if not isinstance(ids, list) or len(ids) > 100 or any(not isinstance(i, str) or not UUID_RE.fullmatch(i) for i in ids):
                 raise ValueError('Playlist ID listesi geçersiz.')
@@ -458,7 +518,7 @@ def run_server(port=8080):
         raise ValueError('Port 1024-65535 arasında olmalı.')
     with ThreadingHTTPServer(('127.0.0.1', port), Handler) as server:
         print(f'EFSS Suno Collector: http://localhost:{port} [127.0.0.1 only]')
-        print('Oturum bilgileri yalnızca RAM içinde. Suno ses indirme işlemleri resmî arayüzden yapılır.')
+        print('Oturum bilgileri yalnızca RAM içinde. İndirmeler kullanıcı onayıyla ve Suno kota/erişim kurallarına tabidir.')
         try:
             server.serve_forever()
         except KeyboardInterrupt:

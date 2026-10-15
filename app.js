@@ -170,6 +170,9 @@
     const eventHistory=state.activity.filter(e=>e.id===id).slice(-20).reverse();
     $('detailBody').innerHTML=`<div class="detail-art">${cover(song,'detail-cover')}<div><div class="detail-title">${h(song.title)}</div><div class="detail-id">${h(song.id)}</div></div></div>
       <div class="detail-actions"><button type="button" data-detail-status="downloaded" class="${st==='downloaded'?'active downloaded':''}">✓ İndirdim</button><button type="button" data-detail-status="missing" class="${st==='missing'?'active missing':''}">✕ İndirmedim</button><button type="button" data-detail-status="unknown" class="${st==='unknown'?'active':''}">? Belirsiz</button></div>
+      <div class="detail-section"><div id="efssFormatStatus" class="text-panel">İndirme manifesti kontrol ediliyor…</div>
+        <button type="button" class="btn btn-primary" data-efss-download="mp3" data-song-id="${h(song.id)}">↓ MP3 indir</button>
+        <button type="button" class="btn btn-outline" data-efss-download="wav" data-song-id="${h(song.id)}">↓ WAV indir</button></div>
       <div class="detail-section"><button type="button" class="btn btn-soft" data-refresh-suno="${h(song.id)}">↻ Bu şarkının metadata bilgisini Suno’dan getir</button> <a class="btn btn-outline" target="_blank" rel="noopener noreferrer" href="${h(song.link)}">↗ Suno’da Aç / Resmî Download</a></div>
       <div class="detail-section"><h3>Metadata / Özellikler</h3><div class="meta-grid">${metaTile('Oluşturulma',fullDate(song.date))}${metaTile('Model',song.model)}${metaTile('Dinlenme',song.plays===null?'—':fmtNumber.format(song.plays))}${metaTile('Süre',song.duration===null?'—':`${Math.floor(song.duration/60)}:${String(Math.floor(song.duration%60)).padStart(2,'0')}`)}${metaTile('Koleksiyonlar',song.workspaces.join(', '))}${metaTile('Playlistler',assignedPlaylists.map(p=>p.name).join(', '))}${metaTile('İşlem / Type',song.task||'Original')}${metaTile('Beğeni',song.liked?'Liked':song.disliked?'Disliked':'—')}${metaTile('Özellikler',[song.stem?'Stem':'',song.isRemix?'Remix':'',song.isCover?'Cover':'',song.instrumental?'Instrumental':''].filter(Boolean).join(', '))}${metaTile('Son işaretleme',flag.updatedAt?fullDate(flag.updatedAt):'—')}${metaTile('Durum kaynağı',flag.source||'—')}</div></div>
       <div class="detail-section"><h3>Style of Music</h3><div class="text-panel">${val(song.style)}</div></div>
@@ -190,6 +193,20 @@
   function closeDetail() {selectedId=null;$('detail').hidden=true;$('overlay').hidden=true;}
   function resetFilters() { $('search').value='';$('statusFilter').value='all';$('kindFilter').value='all';$('modelFilter').value='all';$('workspaceFilter').value='all';$('playlistFilter').value='all';$('dateFrom').value='';$('dateTo').value='';$('sort').value='newest';page=1;render(); }
   window.SunoEFSSImport = importCatalog;
+  window.SunoEFSSFilteredIds = () => filtered.map(x => x.id).filter(id => /^[0-9a-fA-F-]{36}$/.test(id));
+  window.SunoEFSSApplyManifest = files => {
+    if (state.demo || !files || typeof files !== 'object') return;
+    const known = new Set(state.songs.map(x => x.id));
+    let total = 0;
+    for (const [id, formats] of Object.entries(files)) {
+      const fmt = formats?.wav?.sha256 ? 'wav' : formats?.mp3?.sha256 ? 'mp3' : '';
+      if (!fmt || !known.has(id) || state.flags[id]?.status === 'downloaded') continue;
+      state.flags[id] = {...(state.flags[id]||{}),status:'downloaded',source:'verified-'+fmt,updatedAt:new Date().toISOString()};
+      noteEvent(id,'download',fmt.toUpperCase()+' SHA-256 manifestinde kayıtlı.');
+      total++;
+    }
+    if (total) {persist();render();if(selectedId)renderDetail(selectedId);toast(total+' eser otomatik doğrulanmış olarak işaretlendi.');}
+  };
   async function importCatalog(file) {
     if(!file)return;
     try {

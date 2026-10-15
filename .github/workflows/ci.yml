@@ -23,10 +23,10 @@ jobs:
       - name: Test frontend library, filters, and playlists
         run: node --test tests/core.test.cjs
       - name: Test local collector, pagination and HTTP security
-        run: python -m unittest discover -s tests -p 'test_collector.py' -v
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Compile and check JavaScript syntax
         run: |
-          python -m py_compile collector.py
+          python -m py_compile collector.py downloads.py
           node --check app.js
           node --check core.js
           node --check connect.js

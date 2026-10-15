@@ -26,12 +26,17 @@
    </label>
    <button class="btn btn-primary full" type="button" id="collectorSync">Tüm Library + Workspace + Playlist'leri Tara</button>
    <button class="btn btn-outline full" type="button" id="collectorImport">Toplanan kataloğu arşive aktar</button>
-   <p class="help-caption">Senkronizasyon yalnız metadata toplar. MP3/WAV dosyalarını indirmek için her eserin Suno bağlantısındaki resmî Download seçeneğini kullan. Pro'da yeni eserler için aylık kota geçerlidir.</p>
+   <hr><h3>↓ Yerel MP3 / WAV dışa aktarımı</h3>
+   <p class="help-caption">Dosyalar <code>data/audio/</code> altına yazılır, SHA-256 ile kayda geçirilir. Suno indirmeye izin vermezse işlem durur; kotalar aşılmaz.</p>
+   <label class="field-label">Format <select id="collectorFormat"><option value="mp3">MP3</option><option value="wav">WAV</option></select></label>
+   <button class="btn btn-outline full" type="button" id="collectorBatch">Filtredeki ilk 250 eksik eseri indir</button>
+   <div class="text-panel" id="collectorDownloadStatus">Henüz indirme yapılmadı.</div>
   </div>`;
   document.body.appendChild(dialog);
   const $ = id => document.getElementById(id);
   let timer = null;
   let canConnect = false;
+  let latestCompleted = '';
   function say(message) { $('collectorStatus').textContent = message; }
   async function api(path, method = 'GET', body) {
     const response = await fetch(path, {method, headers: body ? {'Content-Type':'application/json'} : {},
@@ -52,13 +57,59 @@
       say(msg);
       $('collectorSync').disabled = !current.connected || current.syncing;
       $('collectorImport').disabled = !current.catalogCount;
+      $('collectorBatch').disabled = !current.connected || !current.catalogCount || current.downloadBusy || current.syncing;
+      const progress=current.downloadProgress||{};
+      const last=(progress.errors||[]).slice(-2).map(x=>x.id.slice(0,8)+': '+x.error).join(' · ');
+      $('collectorDownloadStatus').textContent=`${progress.stage||'Hazır'} · ${progress.done||0}/${progress.total||0} · Hata ${progress.failed||0} · ${progress.current||''} ${last}`;
+      const fingerprint=[progress.stage,progress.done,progress.total,progress.failed].join(':');
+      if (!current.downloadBusy && progress.done && latestCompleted !== fingerprint) {
+        latestCompleted=fingerprint;
+        await applyManifest();
+      }
     } catch (_) {
       canConnect = false;
       say('Collector çevrimdışı. Terminalde “python collector.py” çalıştır ve sayfayı http://localhost:8080 üzerinden aç. Normal http.server veya dosya:// modunda Suno bağlantısı yok.');
       $('collectorSync').disabled = true;
       $('collectorImport').disabled = true;
+      $('collectorBatch').disabled = true;
     }
   }
+  async function manifest(){return api('/api/downloads');}
+  async function applyManifest() {
+    try {window.SunoEFSSApplyManifest?.((await manifest()).files||{});}catch(_){/* offline */}
+  }
+  async function formatLabels() {
+    const box=document.getElementById('efssFormatStatus');
+    const btn=document.querySelector('[data-efss-download][data-song-id]');
+    if (!box||!btn)return;
+    try {
+      const files=(await manifest()).files?.[btn.dataset.songId]||{};
+      box.textContent=['mp3','wav'].map(fmt=>files[fmt]?
+        fmt.toUpperCase()+': ✓ '+files[fmt].bytes+' B · SHA-256 '+files[fmt].sha256.slice(0,12)+'…':
+        fmt.toUpperCase()+': indirilmedi').join('   |   ');
+    }catch(_){box.textContent='Collector bağlantısı yok; bu bilgi alınamadı.';}
+  }
+  async function queue(ids,fmt){
+    if(!ids.length)throw Error('İndirilecek kayıt yok. Önce Suno kataloğunu içe aktar.');
+    if(!confirm(ids.length+' eser için '+fmt.toUpperCase()+' indirilsin mi? Suno kotanı etkileyebilir.'))return;
+    await api('/api/download','POST',{ids,format:fmt});await status();
+  }
+  document.addEventListener('click',async e=>{
+    const btn=e.target.closest?.('[data-efss-download][data-song-id]');
+    if(!btn)return;
+    if(!/^[a-f0-9-]{36}$/i.test(btn.dataset.songId)){alert('Önce gerçek Suno eserini içe aktar.');return;}
+    try {await queue([btn.dataset.songId],btn.dataset.efssDownload);}catch(error){alert('İndirme başlatılamadı: '+error.message);}
+  });
+  new MutationObserver(()=>{if(document.getElementById('efssFormatStatus'))formatLabels();})
+    .observe(document.getElementById('detailBody'),{childList:true});
+  $('collectorBatch').addEventListener('click',async()=>{
+    try{
+      const fmt=$('collectorFormat').value;
+      const files=(await manifest()).files||{};
+      const ids=(window.SunoEFSSFilteredIds?.()||[]).filter(id=>!files[id]?.[fmt]).slice(0,250);
+      await queue(ids,fmt);
+    }catch(error){say('Kuyruk başlatılamadı: '+error.message);}
+  });
   function open() {dialog.showModal(); status(); timer = window.setInterval(status, 2400);}
   function close() {dialog.close(); window.clearInterval(timer); timer = null; $('collectorCookie').value = '';}
   button.addEventListener('click', open);
