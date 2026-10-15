@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Test frontend library, filters, and playlists
-        run: node --test tests/core.test.cjs
+        run: node --test tests/*.test.cjs
       - name: Test local collector, pagination and HTTP security
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Compile and check JavaScript syntax

@@ -18,3 +18,11 @@
 - **Security:** loopback-only, write Origin/Host checks, allowlisted HTTPS CDN addresses, redirect checks; never save login to repo.
 - **Acceptance:** GitHub exact-head CI, then Vivaldi live account smoke test, real WAV/MP3 API behavior, backup roundtrip.
 - **Status:** mocked/unit tests passed; no authenticated real Suno test performed.
+
+## 2026-10-15 — Session visibility / consistency v0.5
+- Parent exact head: v0.4 `4b9d34d06035cc09f3c5f2825278950c2c908367`.
+- Dedicated branch: `feat/session-panel-v0.5` (draft PR; main untouched).
+- Always-visible session button in sidebar; status = offline/disconnected/connected.
+- Embedded Vivaldi cookie-location instructions and local-only security notes.
+- Python single-session lifecycle: connectedAt status (no secret), disconnect and busy guard.
+- Acceptance: CI SUCCESS on exact head; user Vivaldi real account test; no credentials in repo.

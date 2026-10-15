@@ -5,6 +5,15 @@
 ![Version](https://img.shields.io/badge/version-0.2.0-AC95DA) ![Mode](https://img.shields.io/badge/mode-local--first-78C5B2)
 
 
+## v0.5 — Oturumlar (görünür bağlantı durumu)
+
+- **Soldaki “Oturumlar”** alanından bağlantıyı aç. Üst çubukta **Oturumlar / Suno** kısayolu da vardır. Badge: **Bağlı**, **Bağlı değil** veya **Çevrimdışı**.
+- **Bağlı değil:** Python Collector çalışıyor ancak Suno oturumu bağlanmamış. **Çevrimdışı:** `py collector.py` yerine statik web sunucusu kullanılıyor ya da Collector erişilemiyor.
+- Vivaldi'de **suno.com'a giriş yap** → F12 → Application → Cookies → `auth.suno.com` veya `clerk.suno.com` → `__client` satırının **Value** değeri. Bunu **yalnızca kendi bilgisayarındaki localhost oturum formuna** yapıştır; sohbete veya GitHub'a gönderme.
+- **Oturumu bağla / Oturumu kapat:** Collector **tek aktif Suno oturumu** tutar, parolayı veya tokenı diske yazmaz. Oturum sunucu süreci sonlanınca kaybolur; Suno'nun web oturumunu kapatmak için suno.com'dan çıkış yapman gerekir.
+- Aktif indirme veya metadata taraması sürerken oturumu değiştirme/kapatma reddedilir. Böylece açık görevler yanlış oturumdan devam etmez.
+- Bu ekran Suno API'sinin **canlı çalıştığını garanti etmez**; belgelenmemiş uçlar gerçek hesap testi bekliyor.
+
 ## v0.3 — Gerçek Suno metadata senkronizasyonu (deneysel)
 
 **Kurulum (Windows / Vivaldi):**

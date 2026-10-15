@@ -295,6 +295,7 @@ def build_catalog(session, progress, extra_playlist_ids=()):
 class Manager:
     def __init__(self):
         self.session = None
+        self.connected_at = None
         self.syncing = False
         self.progress = {'stage': 'Hazır', 'count': 0, 'page': 0}
         self.last_error = None
@@ -313,14 +314,27 @@ class Manager:
                 pass
 
     def connect(self, cookie):
+        with self.lock:
+            if self.syncing or self.download_busy:
+                raise ValueError('İşlem sürerken oturum değiştirilemez.')
         session = SunoSession(cookie)
         with self.lock:
             self.session = session
+            self.connected_at = utc_now()
         return {'connected': True}
+
+    def disconnect(self):
+        with self.lock:
+            if self.syncing or self.download_busy:
+                raise ValueError('Oturumu kapatmadan önce tarama/indirme işleminin bitmesini bekle.')
+            self.session = None
+            self.connected_at = None
+        return {'connected': False}
 
     def status(self):
         with self.lock:
-            return {'connected': self.session is not None, 'syncing': self.syncing,
+            return {'connected': self.session is not None, 'connectedAt': self.connected_at,
+                    'sessionStorage': 'memory-only', 'syncing': self.syncing,
                     'progress': dict(self.progress), 'error': self.last_error,
                     'lastSyncedAt': self.last_synced_at,
                     'catalogCount': len((self.catalog or {}).get('songs') or []),
@@ -427,7 +441,7 @@ manager = Manager()
 
 
 class Handler(SimpleHTTPRequestHandler):
-    server_version = 'EFSS-Local/0.3'
+    server_version = 'EFSS-Local/0.5'
 
     def log_message(self, fmt, *args):
         # No path/body/credential logging; use generic status reports only.
@@ -498,9 +512,7 @@ class Handler(SimpleHTTPRequestHandler):
                 manager.connect(str(body.get('cookie') or ''))
                 return self.send_json({'connected': True})
             if path == '/api/disconnect':
-                with manager.lock:
-                    manager.session = None
-                return self.send_json({'connected': False})
+                return self.send_json(manager.disconnect())
             if path == '/api/download':
                 manager.start_download(body.get('ids'),body.get('format'))
                 return self.send_json({'started':True},202)

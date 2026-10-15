@@ -6,15 +6,22 @@
   const button = document.createElement('button');
   button.className = 'btn btn-soft';
   button.type = 'button';
-  button.textContent = '⇄ Suno Senkronize';
+  button.textContent = '⇄ Oturumlar / Suno';
   bar.prepend(button);
 
   const dialog = document.createElement('dialog');
   dialog.id = 'collectorDialog';
   dialog.className = 'link-dialog';
-  dialog.innerHTML = `<div class="dialog-head"><h2>⇄ Suno Catalog Collector</h2><button type="button" class="close-btn" id="collectorClose">✕</button></div>
+  dialog.innerHTML = `<div class="dialog-head"><h2>⇄ Suno Oturumları &amp; Senkronizasyon</h2><button type="button" class="close-btn" id="collectorClose">✕</button></div>
   <div class="guide-body">
-   <p><strong>Yerel bağlantı:</strong> <code>python collector.py</code> ile başlat. Suno oturum bilgin yalnız bilgisayarındaki RAM'de tutulur; parola veya cookie'yi sohbete ya da GitHub'a gönderme.</p>
+   <p><strong>Yerel oturum:</strong> Terminalde <code>py collector.py</code> çalışmalı. Vivaldi'deki Suno oturumu <code>localhost</code>'a otomatik taşınmaz. Collector bir adet aktif oturumu RAM'de tutar; uygulama kapandığında bağlantı kaybolur.</p>
+   <details class="session-steps" open><summary><strong>Oturumu nereden bulurum? — Vivaldi</strong></summary>
+   <ol><li><a href="https://suno.com" target="_blank" rel="noopener noreferrer">Suno'ya git</a> ve kendi hesabınla giriş yap.</li>
+   <li>Suno sekmesinde <kbd>F12</kbd> → <b>Application / Uygulama</b> → <b>Cookies / Çerezler</b>.</li>
+   <li><code>https://auth.suno.com</code> veya <code>https://clerk.suno.com</code> altında <code>__client</code> isimli satırın <b>Value</b> değerini bul.</li>
+   <li>Değeri yalnızca alttaki <b>Oturumu bağla</b> alanına yapıştır. ChatGPT'ye, GitHub'a veya başka bir kişiye gönderme.</li></ol>
+   <p class="help-caption"><b>Güvenlik:</b> __client bir parolaya eşdeğerdir. Yerel Collector kaynak koduna güvenmiyorsan bağlama. <b>Oturumu kapat</b> yalnızca Collector bağlantısını keser; Suno web oturumunu kapatmaz.</p>
+   </details>
    <div id="collectorStatus" class="text-panel" role="status">Bağlantı kontrol ediliyor…</div>
    <label class="field-label">Suno <code>__client</code> çerezi (yalnız yerel uygulamaya)
      <input type="password" id="collectorCookie" autocomplete="off" placeholder="Tarayıcı → Developer Tools → Application → Cookies" />
@@ -37,6 +44,20 @@
   let timer = null;
   let canConnect = false;
   let latestCompleted = '';
+  function setSessionUI(mode) {
+    const badge = $('sessionBadge');
+    const footer = $('sessionFooter');
+    const captions = {
+      online: ['Bağlı', 'Suno oturumu RAM içinde bağlı'],
+      disconnected: ['Bağlı değil', 'Collector açık · Suno oturumu bekleniyor'],
+      offline: ['Çevrimdışı', 'Collector kapalı · py collector.py çalıştır']
+    };
+    const [short, full] = captions[mode] || captions.offline;
+    if (badge) badge.textContent = short;
+    if (footer) footer.textContent = full;
+    button.textContent = mode === 'online' ? '● Suno Bağlı' : '⇄ Oturumlar / Suno';
+    button.setAttribute('aria-label', 'Suno oturumlarını ve Collector bağlantısını yönet');
+  }
   function say(message) { $('collectorStatus').textContent = message; }
   async function api(path, method = 'GET', body) {
     const response = await fetch(path, {method, headers: body ? {'Content-Type':'application/json'} : {},
@@ -49,6 +70,9 @@
     try {
       const current = await api('/api/status');
       canConnect = true;
+      setSessionUI(current.connected ? 'online' : 'disconnected');
+      $('collectorConnect').disabled = false;
+      $('collectorDisconnect').disabled = !current.connected;
       const p = current.progress || {};
       let msg = `Yerel sunucu çalışıyor · Oturum: ${current.connected ? 'Bağlı' : 'Bağlı değil'} · Katalog: ${current.catalogCount} eser`;
       if (current.syncing) msg += ` · Tarama: ${p.stage || '?'} — ${p.count || 0} eser, sayfa ${p.page || 0}`;
@@ -68,6 +92,9 @@
       }
     } catch (_) {
       canConnect = false;
+      setSessionUI('offline');
+      $('collectorConnect').disabled = true;
+      $('collectorDisconnect').disabled = true;
       say('Collector çevrimdışı. Terminalde “python collector.py” çalıştır ve sayfayı http://localhost:8080 üzerinden aç. Normal http.server veya dosya:// modunda Suno bağlantısı yok.');
       $('collectorSync').disabled = true;
       $('collectorImport').disabled = true;
@@ -110,9 +137,11 @@
       await queue(ids,fmt);
     }catch(error){say('Kuyruk başlatılamadı: '+error.message);}
   });
-  function open() {dialog.showModal(); status(); timer = window.setInterval(status, 2400);}
+  function open() {if (!dialog.open) dialog.showModal(); status(); if (timer) window.clearInterval(timer); timer = window.setInterval(status, 2400);}
   function close() {dialog.close(); window.clearInterval(timer); timer = null; $('collectorCookie').value = '';}
   button.addEventListener('click', open);
+  $('openSessionPanel')?.addEventListener('click', open);
+  status(); // Sidebar status is visible without opening the modal.
   $('collectorClose').addEventListener('click', close);
   dialog.addEventListener('close', () => {if (timer) window.clearInterval(timer); timer = null; $('collectorCookie').value='';});
   $('collectorConnect').addEventListener('click', async () => {

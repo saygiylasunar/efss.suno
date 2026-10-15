@@ -42,3 +42,8 @@
 1. Import a real anonymized Suno catalog sample (no secrets), audit field mapping.
 2. Harden file verification and batch marking UX.
 3. Design an opt-in, read-only catalog acquisition path without exposing session cookies.
+## v0.5.0 — 2026-10-15
+- Oturumlar menüsü ve canlı bağlantı durumları: bağlı / bağlı değil / çevrimdışı.
+- Vivaldi F12 çerez bulma adımları, yerel oturum güvenlik açıklamaları.
+- Collector oturum başlangıç zamanı (gizli bilgi içermez), açık işler varken oturum değiştirme/kapama koruması.
+- Yeni Node arayüz sözleşmesi ve Python oturum testi.
