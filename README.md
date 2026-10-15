@@ -22,9 +22,17 @@ Ardından **http://localhost:8080** adresinde **⇄ Suno Senkronize** butonunu a
 4. **Toplanan kataloğu arşive aktar** ile taramayı IndexedDB envanterine içe al. Var olan `İndirdim/İndirmedim` işaretleri, notlar ve arşiv geçmişi korunur.
 5. Tekil eser kartındaki **↻ Bu şarkının metadata bilgisini Suno'dan getir** ile o şarkıyı ayrıca sorgula. **↗ Suno'da Aç / Resmî Download** veya **↗ Sıradaki indirilmeyen** ile resmî indirme işlemini başlat; dosyaları indirdikten sonra işaretleyip yerel klasörü kontrol et.
 
-**İşleyiş / sınırlamalar:** Otomatik veri kaynağı olarak Suno'nun **belgelenmemiş/özel** `feed/v3`, `project/me`, `playlist/me`, `playlist/<id>` ve `clip/<id>` uçları kullanılır. Suno bu uçları değiştirebilir. Kullanıcı hesabıyla canlı uçtan uca doğrulama yapılmadı; örnek verilerle otomatik test edildi. Yalnızca katalog bilgisi çekilir. **MP3/WAV indirme işlemi bu sürümde otomatik değildir**; Suno Pro'nun 20 yeni şarkı/ay kotasını aşacak yöntem yoktur. Playlistlerin tüm sayfaları elde edilemezse uygulama eksiklik uyarısı verir. Suno dışındaki API adreslerine istek gönderilmez.
+**İşleyiş / sınırlamalar:** Otomatik veri kaynağı olarak Suno'nun **belgelenmemiş/özel** `feed/v3`, `project/me`, `playlist/me`, `playlist/<id>` ve `clip/<id>` uçları kullanılır. Suno bu uçları değiştirebilir. Kullanıcı hesabıyla canlı uçtan uca doğrulama yapılmadı; örnek verilerle otomatik test edildi. Yalnızca katalog bilgisi çekilir. **MP3/WAV istekleri v0.4 ile açık onayla yapılabilir**; Suno Pro'nun 20 yeni şarkı/ay kotasını aşacak yöntem yoktur. Playlistlerin tüm sayfaları elde edilemezse uygulama eksiklik uyarısı verir. Suno dışındaki API adreslerine istek gönderilmez.
 
 **Veri koruma:** Koleksiyonun yerel `data/catalog.json` dosyasına kaydedilir ve `.gitignore` içindedir. Kendi Suno verilerini ve `.env`/cookie dosyalarını hiçbir zaman public GitHub reposuna ekleme. Ayrıca uygulama içinden **Yedeği dışa aktar** kullan. Yerel HTTP sunucusu sadece `127.0.0.1` arayüzünde çalışır; listeleme, indirme ve kötü niyetli ağ kökenli yazmalar kapalıdır. Sunucu çalışırken gelen Origin kontrolü yapılır.
+
+## v0.4: Yerel Suno Collector ve seçimli ses arşivi
+
+**Çalıştırma:** Python 3.9+ ile `py collector.py` başlat, ardından Vivaldi'de `http://localhost:8080` aç. **Suno Senkronize** ekranında Suno oturumunu yalnız yerel sunucuya bağla, kütüphaneyi tara ve **Toplanan kataloğu arşive aktar** seç. Sonra eser detayındaki **MP3 indir** veya **WAV indir** seçeneklerini kullan. Ayrıca Collector panelinde geçerli filtredeki ilk 250 eksik eser için açık onaylı kuyruk vardır.
+
+Medya dosyaları `data/audio/`, boyut/SHA-256 manifesti `data/download_manifest.json` altında tutulur. Yeniden çalıştırmada daha önce indirilen dosyanın hash'i doğrulanıp atlanır. Başarısız aktarımın geçici dosyası silinir. Suno 403/429 döndürürse kuyruk durdurulur. İşlem geçmişi ve kişisel notlar IndexedDB'de kalır.
+
+**Durum:** API bağlantıları ve indirme yolu simüle edilmiş yanıtlarla test edilmiştir; canlı Suno hesabı üzerinde henüz denenmemiştir. Suno erişim yetkileri ve abonelik kotaları geçerlidir; bu araç bunların uygulanmasını garanti edemez. Kimlik bilgilerini sohbete, GitHub'a veya üçüncü tarafa vermeyin. Collector sadece `127.0.0.1` üzerinden çalışır.
 
 ## Çalıştırma
 
@@ -74,7 +82,7 @@ Sade HTML/CSS/JavaScript; Node yalnızca testleri çalıştırmak için gerekir:
 
 ```bash
 node --test tests/core.test.cjs
-python -m unittest discover -s tests -p 'test_collector.py' -v
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 ## Roadmap

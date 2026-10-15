@@ -1,3 +1,9 @@
+## v0.4.0 — 2026-10-15
+- Yerel Suno Collector GitHub'a eklendi: kişisel Library, Workspace, playlist ve metadata taraması.
+- Tekil MP3/WAV indirme ve 250 kayıtlık onaylı kuyruk.
+- Dosya formatı doğrulama, Suno CDN adres kontrolü, SHA-256 manifest ve tekrar indirmeme.
+- Oturum yalnız yerel bilgisayarda; canlı hesap doğrulaması bekliyor.
+
 ## v0.3.0 — Read-only Catalog Collector (2026-10-14)
 
 - Local Python loopback server, memory-only session authentication, strict Host/Origin checks.

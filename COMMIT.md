@@ -10,3 +10,11 @@
 - Acceptance: confirm Vivaldi login, 100% unique clip count, playlist paging completeness, field coverage, persistence/re-import, official download flag workflow.
 - Keep PR draft/unmerged until exact-head GitHub CI success and human live-account smoke test.
 2026-10-15: read-only v0.3 Collector imported into v0.4 working branch; live Suno account validation pending.
+
+## 2026-10-15 — Opt-in local downloads (v0.4)
+- **Base:** PR #2 exact head 2221897ef3c9b170beca3ae5870f9db1a480614f; CI SUCCESS.
+- **Branch:** feat/local-collector-downloads-v0.4; PR #3 draft/unmerged, stacked on PR #2.
+- **Implemented:** read-only library/playlist metadata collector; explicit per-song MP3/WAV request; first 250 filtered pending items; atomic file saves and SHA-256 manifest; media checks.
+- **Security:** loopback-only, write Origin/Host checks, allowlisted HTTPS CDN addresses, redirect checks; never save login to repo.
+- **Acceptance:** GitHub exact-head CI, then Vivaldi live account smoke test, real WAV/MP3 API behavior, backup roundtrip.
+- **Status:** mocked/unit tests passed; no authenticated real Suno test performed.
