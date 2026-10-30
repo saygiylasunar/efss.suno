@@ -78,9 +78,14 @@ def preflight_sources(ids, fmt, catalog):
 def verified_url(value):
     if not isinstance(value, str):
         raise DownloadError("Ses URL bulunamadı.")
-    parsed = urlsplit(value)
-    if (parsed.scheme != "https" or parsed.port or parsed.username or
-            parsed.password or not HOST.fullmatch(parsed.hostname or "")):
+    try:
+        parsed = urlsplit(value)
+        allowed = (parsed.scheme == "https" and parsed.port is None and
+                   not parsed.username and not parsed.password and
+                   bool(HOST.fullmatch(parsed.hostname or "")))
+    except ValueError:
+        allowed = False
+    if not allowed:
         raise DownloadError("Yalnızca güvenilir Suno HTTPS CDN adreslerine erişilebilir.")
     return value
 
@@ -186,7 +191,7 @@ def save_manifest(path, manifest):
     os.replace(temp,path)
 
 def verify_file(path, record):
-    if not path.is_file() or path.stat().st_size != record.get("bytes"):
+    if not isinstance(record, dict) or not path.is_file() or path.stat().st_size != record.get("bytes"):
         return False
     digest = hashlib.sha256()
     with path.open("rb") as fh:
@@ -209,7 +214,7 @@ def export_one(session, song, fmt, audio_dir, manifest, cancel_event=None):
         raise DownloadError("Kullanici tarafindan durduruldu.")
     item = manifest.setdefault("files",{}).setdefault(song["id"],{})
     previous = item.get(fmt)
-    if previous and isinstance(previous.get("file"),str):
+    if isinstance(previous, dict) and isinstance(previous.get("file"),str):
         fname = previous["file"]
         if Path(fname).name == fname and verify_file(audio_dir / fname,previous):
             return "already",previous

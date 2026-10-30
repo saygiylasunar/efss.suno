@@ -29,7 +29,9 @@ class Tests(unittest.TestCase):
     def test_url_enforcement(self):
         for url in ("https://127.0.0.1/a.mp3","http://cdn1.suno.ai/a.mp3",
                     "https://cdn1.suno.ai.evil.com/x", "file:///etc/passwd",
-                    "https://u:p@cdn1.suno.ai/a.mp3", "https://cdn1.suno.ai:444/a.mp3"):
+                    "https://u:p@cdn1.suno.ai/a.mp3", "https://cdn1.suno.ai:444/a.mp3",
+                    "https://cdn1.suno.ai:0/a.mp3", "https://cdn1.suno.ai:invalid/a.mp3",
+                    "https://[malformed/a.mp3"):
             with self.subTest(url=url),self.assertRaises(d.DownloadError): d.verified_url(url)
         self.assertEqual(d.verified_url(SONG["audio_url"]),SONG["audio_url"])
 
@@ -53,6 +55,18 @@ class Tests(unittest.TestCase):
             with patch.object(d,"stream_audio",side_effect=AssertionError("should not redownload")):
                 mode,_=d.export_one(None,SONG,"mp3",root,manifest)
             self.assertEqual(mode,"already")
+
+    def test_corrupt_manifest_entry_triggers_fresh_download(self):
+        data = b"ID3" + b"\0" * 2048
+        with tempfile.TemporaryDirectory() as base:
+            root = Path(base)
+            manifest = {"files": {ID: {"mp3": "invalid manifest record"}}}
+            self.assertFalse(d.verify_file(root / "missing.mp3", "invalid manifest record"))
+            with patch.object(d, "OPENER", DummyOpener(data)):
+                mode, record = d.export_one(None, SONG, "mp3", root, manifest)
+            self.assertEqual(mode, "downloaded")
+            self.assertEqual(record["bytes"], len(data))
+            self.assertTrue(d.verify_file(root / record["file"], record))
 
     def test_invalid_audio_removed(self):
         with tempfile.TemporaryDirectory() as base:
